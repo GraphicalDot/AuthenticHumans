@@ -1,23 +1,38 @@
 import os
 from kombu import Exchange, Queue
+from celery.schedules import crontab
+
 BROKER_URL = 'redis://'
 
 CELERY_QUEUES = (
-		Queue('add_feed', Exchange('default', delivery_mode= 2),  routing_key='add.import'),
-		Queue('multiply_feed', Exchange('default', delivery_mode=2),  routing_key='multiply.import'),
+		Queue('scrape_url', Exchange('default', delivery_mode= 2),  routing_key='scrape_url.import'),
+		Queue('gcs_links', Exchange('default', delivery_mode=2),  routing_key='gcs_links.import'),
 		    )
 
 CELERY_ROUTES = {
-		'tasks.add': {
-				'queue': 'add_feed',
-				'routing_key': 'add.import',
+		'tasks.populate_scrape_url': {
+				'queue': 'scrape_url',
+				'routing_key': 'scrape_url.import',
 				},
 
-		'tasks.multiply': {
-				'queue': 'multiply_feed',
-				'routing_key': 'multiply.import',
+		'tasks.fetch_html': {
+				'queue': 'gcs_links',
+				'routing_key': 'gcs_links.import',
 							        },
 			}
+
+
+"""
+CELERYBEAT_SCHEDULE = {
+	'every-minute': {
+		'task': 'tasks.populate_scrape_url',
+			'schedule': crontab(minute='*/1'),
+			'args': ("LINKEDIN"),
+			},
+	}
+
+
+"""
 
 #redis://:password@hostname:port/db_number #if using a remote host
 #BROKER_HOST = ''

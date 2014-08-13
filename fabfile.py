@@ -9,9 +9,9 @@ import os
 import time
 
 env.use_ssh_config = True
-env.hosts = ["ec2-50-112-147-199.us-west-2.compute.amazonaws.com"]
+env.hosts = ''
 env.user = "ubuntu"
-env.key_filename = "/home/k/Programs/Canworks/canworks.pem"
+env.key_filename = ''
 env.warn_only = False
 
 """
@@ -38,31 +38,10 @@ def basic_setup():
 	run("sudo apt-get install -y gcc libffi-dev")
 
 def increase_swap():
-	"""
-	Scipy needs generally need more ram to install, this function increase the swap by allocating some harddisk 
-	space to ram, which is slow but solves the purpose.
-	Required only on amazom ec-2 micro instance
-	"""
 
 	run("sudo /bin/dd if=/dev/zero of=/var/swap.1 bs=1M count=1024")
 	run("sudo /sbin/mkswap /var/swap.1")
 	run("sudo /sbin/swapon /var/swap.1")
-
-
-def hunpos_tagger():
-	"""
-	This script installs the hunpos tagger 
-	"""
-	with cd("/home/ubuntu/VirtualEnvironment/canworks/trunk"):
-		run("./build.sh build")
-	
-	with cd("/home/ubuntu/VirtualEnvironment/canworks"):
-		run("sudo cp -r trunk/ /usr/local/bin")
-		
-	with cd("/usr/local/bin"):
-		run("sudo wget https://hunpos.googlecode.com/files/en_wsj.model.gz")
-		run("sudo gunzip en_wsj.model.gz")
-
 
 def virtual_env():
 	"""
@@ -81,15 +60,8 @@ def virtual_env():
 						run("sudo mkdir applogs")
 						run("sudo chown -R ubuntu:ubuntu applogs")
 					if not exists("canworks", use_sudo=True):	
-						run(" git clone https://github.com/AdityaKhanna/canworks.git")
-					run("pip install -r canworks/requirements.txt")
-
-
-def download_corpora():
-	with cd("/home/ubuntu/VirtualEnvironment/"):
-		with prefix("source bin/activate"):
-			print(_green("Now downloading textblob packages"))	
-			run("python -m textblob.download_corpora")
+						run(" git clone https://github.com/RishabhVerma/amoeba.git")
+					run("pip install -r amoeba/requirements.txt")
 
 
 
@@ -108,7 +80,7 @@ def nginx():
 	git repository.Finally restart the nginx server
 	"""
 	run("sudo apt-get install -y nginx")
-	with prefix("cd /home/ubuntu/VirtualEnvironment/canworks/configs"):
+	with prefix("cd /home/ubuntu/VirtualEnvironment/amoeba/configs"):
 		run("sudo cp nginx.conf /etc/nginx/nginx.conf")
 		run("sudo cp nginx_default.conf /etc/nginx/sites-enabled/default")
 		
@@ -202,7 +174,7 @@ def ram_usage():
 def supervisord_conf():
 	with cd("/home/ubuntu/VirtualEnvironment/"):
 		with prefix("source bin/activate"):
-			run("sudo cp /home/ubuntu/VirtualEnvironment/canworks/configs/supervisord.conf /etc/supervisord.conf")
+			run("sudo cp /home/ubuntu/VirtualEnvironment/amoeba/configs/supervisord.conf /etc/supervisord.conf")
 			run("supervisorctl reload")	
 
 
