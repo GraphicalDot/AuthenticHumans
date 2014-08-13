@@ -6,6 +6,7 @@ from celery.result import TaskSetResult
 from celery.utils import gen_unique_id, cached_property
 from celery.decorators import periodic_task
 from datetime import timedelta
+from celery.utils.log import get_task_logger
 import time
 import requests
 import pymongo
@@ -77,16 +78,22 @@ class GenerateURLs:
 
 
 
-@celery.task
+@celery.task(ignore_result=True)
 def fetch_html(url):
 	"""
 	This is the function which gets the html lying on the url and then save it to google cloud staorage
 
 	"""
-	time.sleep(2)
+	time.sleep(10)
 	#result = requests.get(url)
 	return 
 
+
+@celery.task
+def error_handler(uuid):
+	result = AsyncResult(uuid)
+	exc = result.get(propagate=False)
+	print('Task {0} raised exception: {1!r}\n{2!r}'.format(uuid, exc, result.traceback))
 
 
 class CallBackTask(Task):
@@ -127,20 +134,8 @@ class CallBackTask(Task):
 		pass
 
 
-@celery.task()
-def add(a, b):
-	return a+b
-
-
 #@celery.task(base=CallBackTask)
-@celery.task
-def multiply(a, b):
-	return a*b
-
-
-
-
-@celery.task
+@celery.task(ignore_result=True)
 def populate_scrape_url(name):
 	"""
 	This function will call GenerateURLs class
@@ -159,7 +154,7 @@ def populate_scrape_url(name):
 		urls = instance[1]
 		for url in urls:
 			fetch_html.apply_async([url], retry=True, retry_policy={'max_retries': 3, 
-				'interval_start': 0, 'interval_step': 0.2, 'interval_max': 0.2, })
+				'interval_start': 0, 'interval_step': 0.2, 'interval_max': 0.2, }, link_error=error_handler.s())
 
 		#TODO: update counter by inserting the new counter in mongodb
 

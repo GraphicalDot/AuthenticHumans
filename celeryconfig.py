@@ -63,3 +63,7 @@ CELERY_ACCEPT_CONTENT=['json']
 CELERY_ENABLE_UTC = True
 CELERYD_CONCURRENCY = 20
 #CELERYD_LOG_FILE="%s/celery.log"%os.path.dirname(os.path.abspath(__file__))
+CELERY_DISABLE_RATE_LIMITS = True
+
+
+
