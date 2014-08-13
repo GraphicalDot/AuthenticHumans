@@ -10,6 +10,8 @@ from celery.utils.log import get_task_logger
 import time
 import requests
 import pymongo
+import random
+
 
 celery = Celery('p')
 
@@ -78,7 +80,7 @@ class GenerateURLs:
 
 
 
-@celery.task(ignore_result=True)
+@celery.task(ignore_result = True)
 def fetch_html(url):
 	"""
 	This is the function which gets the html lying on the url and then save it to google cloud staorage
@@ -86,7 +88,12 @@ def fetch_html(url):
 	"""
 	time.sleep(10)
 	#result = requests.get(url)
-	return 
+	return "http://s3.xyz.com/%s"%random.randint(20, 300) 
+
+@celery.task
+def parse_html(link):
+	time.sleep(10)
+	return "the parsed link is %s"%link 
 
 
 @celery.task
@@ -135,7 +142,7 @@ class CallBackTask(Task):
 
 
 #@celery.task(base=CallBackTask)
-@celery.task(ignore_result=True)
+@celery.task(ignore_result=True, max_retries=3, retry=True)
 def populate_scrape_url(name):
 	"""
 	This function will call GenerateURLs class
@@ -153,16 +160,18 @@ def populate_scrape_url(name):
 		new_counter = instance[0]
 		urls = instance[1]
 		for url in urls:
-			fetch_html.apply_async([url], retry=True, retry_policy={'max_retries': 3, 
-				'interval_start': 0, 'interval_step': 0.2, 'interval_max': 0.2, }, link_error=error_handler.s())
+			chain = fetch_html.s(url) | parse_html.s()
+			chain()
+			#fetch_html.apply_async([url], link=parse_html.s(), link_error=error_handler.s())
 
 		#TODO: update counter by inserting the new counter in mongodb
 
 	if name == "FACEBOOK":
 		instance = GenerateURLs.facebook(counter)
+		new_counter = instance[0]
+		urls = instance[1]
 		for url in urls:
-			fetch_html.apply_async([url], retry=True, retry_policy={'max_retries': 3, 
-				'interval_start': 0, 'interval_step': 0.2, 'interval_max': 0.2, })
+			fetch_html.apply_async([url], link=parse_html.s(), link_error=error_handler.s())
 		#TODO: update counter by inserting the new counter in mongodb
 		
 	if name == "GITHUB":
@@ -170,9 +179,8 @@ def populate_scrape_url(name):
 		new_counter = instance[0]
 		urls = instance[1]
 		for url in urls:
-			fetch_html.apply_async([url], retry=True, retry_policy={'max_retries': 3, 
-				'interval_start': 0, 'interval_step': 0.2, 'interval_max': 0.2, })
 		#TODO: update counter by inserting the new counter in mongodb
+			fetch_html.apply_async([url], link=parse_html.s(), link_error=error_handler.s())
 			
 	pass
 

@@ -7,6 +7,7 @@ BROKER_URL = 'redis://'
 CELERY_QUEUES = (
 		Queue('scrape_url', Exchange('default', delivery_mode= 2),  routing_key='scrape_url.import'),
 		Queue('gcs_links', Exchange('default', delivery_mode=2),  routing_key='gcs_links.import'),
+		Queue('parse_html', Exchange('default', delivery_mode=2),  routing_key='parse_html.import'),
 		    )
 
 CELERY_ROUTES = {
@@ -18,6 +19,10 @@ CELERY_ROUTES = {
 		'tasks.fetch_html': {
 				'queue': 'gcs_links',
 				'routing_key': 'gcs_links.import',
+							        },
+		'tasks.parse_html': {
+				'queue': 'parse_html',
+				'routing_key': 'parse_html.import',
 							        },
 			}
 
