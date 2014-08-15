@@ -34,6 +34,7 @@ class URLWorkersTask:
 		seed_url = ""
 		urls = list()
 		new_counter = None
+		return (new_counter, range(0, 100))
 
 
 

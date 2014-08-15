@@ -47,10 +47,6 @@ def fetch_html(url):
 	return FetchingWorkersTask.html("url")
 
 
-@app.task(max_retries=3, retry=True)
-def parse_html(link):
-	time.sleep(10)
-	return
 
 
 @app.task
@@ -129,7 +125,9 @@ def populate_scrape_url(name):
 		new_counter = instance[0]
 		urls = instance[1]
 		for url in urls:
-			fetch_html.apply_async([url], link=parse_html.s(), link_error=error_handler.s())
+			parsing_worker = ParsingWorkersTask()
+			chain = fetch_html.s(url) | parsing_worker.facebook.s()
+			chain()
 		#TODO: update counter by inserting the new counter in mongodb
 		
 	if name == "GITHUB":
@@ -138,7 +136,9 @@ def populate_scrape_url(name):
 		urls = instance[1]
 		for url in urls:
 		#TODO: update counter by inserting the new counter in mongodb
-			fetch_html.apply_async([url], link=parse_html.s(), link_error=error_handler.s())
+			parsing_worker = ParsingWorkersTask()
+			chain = fetch_html.s(url) | parsing_worker.github.s()
+			chain()
 			
 	pass
 

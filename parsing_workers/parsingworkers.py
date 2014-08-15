@@ -28,20 +28,20 @@ class ParsingWorkersTask:
 		pass
 	
 	#@current_app.task(filter=task_method) if only one celery app exists
-	@app.task(filter=task_method)
+	@current_app.task(name="ParsingWorkersTask.linkedin", filter=task_method)
 	def linkedin(gcs_link):
 		time.sleep(10)
-		return "link parsed and saved on mongodb %s"%gcs_link
+		return {"result": True, "messege": "LINKEDIN link parsed and saved on mongodb %s"%gcs_link}
 	
 	
-	@app.task(filter=task_method)
+	@current_app.task(name="ParsingWorkersTask.facebook", filter=task_method)
 	def facebook(gcs_link):
 		time.sleep(10)
-		return "link parsed and saved on mongodb %s"%gcs_link
+		return {"result": True, "messege": "FACEBOOK link parsed and saved on mongodb %s"%gcs_link}
 	
 	
-	@app.task(filter=task_method)
+	@current_app.task(name="ParsingWorkersTask.github", filter=task_method)
 	def github(gcs_link):
 		time.sleep(10)
-		return "link parsed and saved on mongodb %s"%gcs_link
+		return {"result": True, "messege": "GITHUB link parsed and saved on mongodb %s"%gcs_link}
 	
