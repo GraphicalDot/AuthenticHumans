@@ -1,7 +1,8 @@
 import os
 from kombu import Exchange, Queue
 from celery.schedules import crontab
-
+#from kombu import serialization
+#serialization.registry._decoders.pop("application/x-python-serialize")
 BROKER_URL = 'redis://'
 
 CELERY_QUEUES = (
@@ -20,7 +21,7 @@ CELERY_ROUTES = {
 				'queue': 'gcs_links',
 				'routing_key': 'gcs_links.import',
 							        },
-		'tasks.parse_html': {
+		'tasks.ParsingWorkersTask': {
 				'queue': 'parse_html',
 				'routing_key': 'parse_html.import',
 							        },
@@ -64,7 +65,7 @@ CELERY_MONGODB_BACKEND_SETTINGS = {
 
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERY_ACCEPT_CONTENT=['json']
+CELERY_ACCEPT_CONTENT=['application/json']
 CELERY_ENABLE_UTC = True
 CELERYD_CONCURRENCY = 20
 #CELERYD_LOG_FILE="%s/celery.log"%os.path.dirname(os.path.abspath(__file__))

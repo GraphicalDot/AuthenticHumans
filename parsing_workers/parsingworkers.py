@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-
-
+import time
+import os
+import sys
+parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(parent)
+from celery_app.App import app
+from celery.contrib.methods import task_method
+from celery import current_app
 
 class ParsingWorkersTask:
 	"""
@@ -21,20 +27,20 @@ class ParsingWorkersTask:
 	def __init__(self):
 		pass
 	
-	
-	@staticmethod
+	#@current_app.task(filter=task_method) if only one celery app exists
+	@app.task(filter=task_method)
 	def linkedin(gcs_link):
 		time.sleep(10)
 		return "link parsed and saved on mongodb %s"%gcs_link
 	
 	
-	@staticmethod
+	@app.task(filter=task_method)
 	def facebook(gcs_link):
 		time.sleep(10)
 		return "link parsed and saved on mongodb %s"%gcs_link
 	
 	
-	@staticmethod
+	@app.task(filter=task_method)
 	def github(gcs_link):
 		time.sleep(10)
 		return "link parsed and saved on mongodb %s"%gcs_link

@@ -50,7 +50,7 @@ def fetch_html(url):
 @app.task(max_retries=3, retry=True)
 def parse_html(link):
 	time.sleep(10)
-	return "The parsed link is %s"%link 
+	return
 
 
 @app.task
@@ -117,7 +117,8 @@ def populate_scrape_url(name):
 		new_counter = instance[0]
 		urls = instance[1]
 		for url in urls:
-			chain = fetch_html.s(url) | parse_html.s()
+			parsing_worker = ParsingWorkersTask()
+			chain = fetch_html.s(url) | parsing_worker.linkedin.s()
 			chain()
 			#fetch_html.apply_async([url], link=parse_html.s(), link_error=error_handler.s())
 
