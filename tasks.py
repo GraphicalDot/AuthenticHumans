@@ -1,5 +1,4 @@
-
-from celery import Celery
+from __future__ import absolute_import
 from celery import states
 from celery.task import Task, TaskSet
 from celery.result import TaskSetResult
@@ -7,16 +6,14 @@ from celery.utils import gen_unique_id, cached_property
 from celery.decorators import periodic_task
 from datetime import timedelta
 from celery.utils.log import get_task_logger
+from url_workers import URLWorkersTask
+from fetching_workers import FetchingWorkersTask
+from parsing_workers import ParsingWorkersTask
 import time
 import requests
 import pymongo
 import random
-
-
-celery = Celery('p')
-
-# Optional configuration, see the application user guide.
-celery.config_from_object('celeryconfig')
+from celery_app.App import app
 
 
 MONGO_CONNECTION = pymongo.Connection()
@@ -42,61 +39,21 @@ Workers
 
 """
 
-class GenerateURLs:
-	"""
-	This function will generate urls and feed into the srape_url queue of the celery stored in the celery.
-	Few workers will be assigned to feed onto this queue, and will get the html which will be lying on this 
-	urls
-
-	Args:
-		name: name of the site
-		counter: upto which alphabet the urls were scraped or for that matter some other counter depending 
-		upon the website
-	"""
-
-	def __init__(self):
-		pass
-	
-	@staticmethod
-	def linkedin(counter):
-		seed_url = ""
-		urls = list()
-		new_counter = None
-		return (new_counter, range(0, 100))
-
-	@staticmethod
-	def facebook(counter):
-		seed_url = ""
-		urls = list()
-		new_counter = None
-		return (new_counter, range(0, 100))
-
-	@staticmethod
-	def github(counter):
-		seed_url = ""
-		urls = list()
-		new_counter = None
-		return (new_counter, range(0, 100))
-
-
-
-@celery.task(ignore_result = True)
+@app.task(ignore_result = True, max_retries=3, retry=True)
 def fetch_html(url):
 	"""
 	This is the function which gets the html lying on the url and then save it to google cloud staorage
-
 	"""
-	time.sleep(10)
-	#result = requests.get(url)
-	return "http://s3.xyz.com/%s"%random.randint(20, 300) 
+	return FetchingWorkersTask.html("url")
 
-@celery.task
+
+@app.task(max_retries=3, retry=True)
 def parse_html(link):
 	time.sleep(10)
-	return "the parsed link is %s"%link 
+	return "The parsed link is %s"%link 
 
 
-@celery.task
+@app.task
 def error_handler(uuid):
 	result = AsyncResult(uuid)
 	exc = result.get(propagate=False)
@@ -142,7 +99,7 @@ class CallBackTask(Task):
 
 
 #@celery.task(base=CallBackTask)
-@celery.task(ignore_result=True, max_retries=3, retry=True)
+@app.task(ignore_result=True)
 def populate_scrape_url(name):
 	"""
 	This function will call GenerateURLs class
@@ -156,7 +113,7 @@ def populate_scrape_url(name):
 	counter = None	
 
 	if name == "LINKEDIN":
-		instance = GenerateURLs.linkedin(counter)
+		instance = URLWorkersTask.linkedin(counter)
 		new_counter = instance[0]
 		urls = instance[1]
 		for url in urls:
@@ -167,7 +124,7 @@ def populate_scrape_url(name):
 		#TODO: update counter by inserting the new counter in mongodb
 
 	if name == "FACEBOOK":
-		instance = GenerateURLs.facebook(counter)
+		instance = URLWorkersTask.facebook(counter)
 		new_counter = instance[0]
 		urls = instance[1]
 		for url in urls:
@@ -175,7 +132,7 @@ def populate_scrape_url(name):
 		#TODO: update counter by inserting the new counter in mongodb
 		
 	if name == "GITHUB":
-		instance = GenerateURLs.github(counter)
+		instance = URLWorkersTask.github(counter)
 		new_counter = instance[0]
 		urls = instance[1]
 		for url in urls:
