@@ -33,9 +33,14 @@ def create_bucket():
 	try:
 		header_values = {"x-goog-project-id": PROJECT_ID}
 		uri.create_bucket(headers=header_values)
-		print 'Successfully created bucket "%s"' % name
+		print 'Successfully created bucket "%s"'%BUCKET_NAME
+
+	except boto.exception.GSCreateError, e:
+		print 'Bucket already exists'
+	
 	except boto.exception.StorageCreateError, e:
 		print 'Failed to create bucket:', e
+	
 	except gcs_oauth2_boto_plugin.oauth2_client.AccessTokenRefreshError as e:
 		print "invalid client:", e
 
