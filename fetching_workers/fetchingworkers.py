@@ -1,9 +1,16 @@
-#!/usr/bin/env python
 #-*- coding: utf-8 -*-
 
 import time
 import random
+import requests
+import sys
+import os
+from celery import current_app
 
+parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(parent)
+from celery_app.App import app
+from CloudStorage import GCS
 
 class FetchingWorkersTask:
 	"""
@@ -13,10 +20,21 @@ class FetchingWorkersTask:
 	def __init__(self):
 		pass
 
-	@staticmethod
-	def html(url):
+	@classmethod
+	def html(cls, url):
 		time.sleep(10)
-		return "http://s3.xyz.com/%s"%random.randint(20, 300)
+		result = cls.scrape(url)
+		if result:
+			return result
 
+
+
+
+	@classmethod
+	def scrape(cls, url):
+		r = requests.get(url)
+		if r.status_code == 200:
+			return r.text
+		return False
 
 

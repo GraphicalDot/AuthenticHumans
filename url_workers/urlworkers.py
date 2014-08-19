@@ -16,8 +16,8 @@ class URLWorkersTask:
 		pass
 	
 	@staticmethod
-	def linkedin(counter):
-		seed_url = ""
+	def linkedin(counter, alphabet):
+		seed_url = "http://www.linkedin.com/directory/people-%s"%(alphabet.lower())
 		urls = list()
 		new_counter = None
 		return (new_counter, range(0, 100))
