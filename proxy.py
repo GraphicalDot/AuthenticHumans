@@ -3,6 +3,7 @@
 import sys
 import os
 import requests
+import lxml.html
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
@@ -41,12 +42,12 @@ class Proxies:
 			(u'Viet Nam', u'VN'), (u'Zambia', u'ZM'), (u'Zimbabwe', u'ZW')
 
 		latency:
-			type int, latency required in a proxy, values can be 1000, 3000, 5000, or 10000, 
+			type str, latency required in a proxy, values can be 1000, 3000, 5000, or 10000, 
 			which corresponds to less than 1 sec, leass than 5 sec, less than 3 sec and less
 			than 10 sec respectively.
 
 		reliability:
-			type int, reliability of the proxy, values can be 2500, 5000, 7500, 9000, 
+			type str, reliability of the proxy, values can be 2500, 5000, 7500, 9000, 
 			which correponds to more than 25%, more than 50%, more than 75% and more than 90 %
 		
 
@@ -62,11 +63,57 @@ class Proxies:
 		self.type_of_proxy = self.arguments(type_of_proxy)
 		self.country = self.arguments(country)
 		self.latency = self.arguments(latency)
-		self.reliability = self.arguments(latency)
+		self.reliability = self.arguments(reliability)
 
 
 	def xroxy_parse(self, html):
-		return 
+		"""
+		This method gets the page of the xroxy website with params like latency, country etc appended to it.
+		It then parses the page to get two results
+		1.Proxy_list
+		2.Page_list
+
+		If the length of the proxy list is less than the number_of_proxies then it parses the next page fron the
+		page list to get more proxies, It repeats this process untill the length of proxy_list increases or becomes
+		equal to the number_of_proxies param of this class.
+
+		Returns:
+			proxy_list: Whose length is equal to or greater than number_of_proxies param of this class
+
+		"""
+
+		#this when provided with html of a page returns a lxml tree
+		html_tree = lambda html: lxml.html.fromstring(html)
+
+		#this when provided with lxml tree returns the list of proxies present in the lxml tree for xroxy website
+		proxies = lambda tree:  [proxy.split()[0] for proxy in tree.xpath("//tr[starts-with(@class, 'row')]/td[2]/a/text()[1]")]
+		
+		
+		def scrape(url):
+			r = requests.get(url)
+			if r.status_code == 200:
+				tree = html_tree(r.text)
+				proxy_list.extend(proxies(tree))
+				return True
+			return False
+
+		tree = html_tree(html)
+		proxy_list = proxies(tree)
+		pages_list = ["http://www.xroxy.com/%s"%element for element in 
+					tree.xpath("//table[@class='tbl']/tbody/tr/td[1]/table/tbody/tr/td/small/a/@href")[1:]]
+		
+
+		page_number = 0
+		while len(proxy_list) <= self.number_of_proxies: 
+			try:
+				if scrape(pages_list[page_number]):
+					i += 1			
+				else:
+					raise StandardError("The page %s cannot be fetched"%pages_list[page_number])
+			except IndexError:
+				return proxy_list
+
+		return proxy_list
 
 
 
@@ -81,17 +128,13 @@ class Proxies:
 			self.select_option(driver, "//select[@id='country_id']", self.country)
 		
 		if self.latency:
-			self.select_option(driver, "//select[@id='latency_id']", self.type_of_proxy)
+			self.select_option(driver, "//select[@id='latency_id']", self.latency)
 		
 		if self.reliability:
-			self.select_option(driver, "//select[@id='type_id']", self.reliability)
+			self.select_option(driver, "//select[@id='reliability_id']", self.reliability)
 		
 		html = driver.page_source
-
-
-
-
-
+		return self.xroxy_parse(html)
 
 
 	def select_option(self, driver, xpath, option):
@@ -107,10 +150,5 @@ class Proxies:
 	
 
 if __name__ == "__main__":
-	instance = Proxies(number_of_proxies=10, type_of_proxy="Socks4", country="CN", latency=3000, reliability=9000)
-	print instance.number_of_proxies
-	print instance.type_of_proxy
-	print instance.country
-	print instance.latency
-	print instance.reliability
+	instance = Proxies(number_of_proxies=100, type_of_proxy="Socks4", country="CN", latency="3000", reliability="9000")
 	instance.xroxy()
