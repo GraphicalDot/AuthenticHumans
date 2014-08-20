@@ -1,3 +1,4 @@
+#!/usr/bin/env ipython
 #-*- coding: utf-8 -*-
 import sys
 import os
@@ -7,7 +8,9 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 
-
+parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(parent)
+from CloudStorage import RDS
 
 class XRoxyProxies:
 	"""
@@ -62,7 +65,7 @@ class XRoxyProxies:
 		availability of the proxies in the defined paramteres in the arguments
 
 	"""
-	def __init__(self, number_of_proxies, type_of_proxy, country, latency, reliability):
+	def __init__(self, number_of_proxies, type_of_proxy=None, country=None, latency=None, reliability=None):
 		self.arguments = lambda x: x if x else None
 		self.number_of_proxies = self.arguments(number_of_proxies)
 		self.type_of_proxy = self.arguments(type_of_proxy)
@@ -91,7 +94,14 @@ class XRoxyProxies:
 		html_tree = lambda html: lxml.html.fromstring(html)
 
 		#this when provided with lxml tree returns the list of proxies present in the lxml tree for xroxy website
-		proxies = lambda tree:  [proxy.split()[0] for proxy in tree.xpath("//tr[starts-with(@class, 'row')]/td[2]/a/text()[1]")]
+		#proxies = lambda tree:  [proxy.split()[0] for proxy in tree.xpath("//tr[starts-with(@class, 'row')]/td[2]/a/text()[1]")]
+		proxies = lambda tree:  [{"ip": proxy.xpath("td[2]/a/text()")[0].split()[0], 
+					"port": proxy.xpath("td[3]/a/text()")[0],
+					"type": proxy.xpath("td[4]/a/text()")[0],
+					"country": proxy.xpath("td[6]/a/small/text()")[0],
+					"latency": proxy.xpath("td[7]/text()")[0],
+					"reliability": proxy.xpath("td[8]/text()")[0],}
+				for proxy in tree.xpath("//tr[starts-with(@class, 'row')]")]
 		
 		
 		def scrape(url):
@@ -147,7 +157,9 @@ class XRoxyProxies:
 			self.__select_option(driver, "//select[@id='reliability_id']", self.reliability)
 		
 		html = driver.page_source
-		return self.__xroxy_parse(html)
+		proxy_list = self.__xroxy_parse(html) #here we have the whole proxy list
+		self.redis(proxy_list)
+		return True
 
 
 	def __select_option(self, driver, xpath, option):
@@ -158,7 +170,28 @@ class XRoxyProxies:
 		"""
 		element = driver.find_element_by_xpath(xpath)
 		p = Select(element)
-		p.select_by_value(option)
+		try:
+			p.select_by_value(option)
+		except TypeError as e: #None type cannot be passed as a value into the select_by_value option so it doesnt change anything on browser
+			pass
 		return
 	
 
+	def redis(self, proxy_list):
+		"""
+		This method will take a proxy_list and then store it in the redis list
+		In case, Unable to store in redis, A standard error will be raised with the exception messege from the class RDS
+		which will then be handled here
+		"""
+		redis_instance = RDS()
+		try:
+			redis_instance.store_proxy_list(proxy_list)
+		except StandardError as e:
+			print e
+
+
+
+if __name__ == "__main__":
+	#instance = XRoxyProxies(number_of_proxies=100, type_of_proxy="Socks4", country="CN", latency="3000", reliability="9000")
+	instance = XRoxyProxies(number_of_proxies=100)
+	print instance.xroxy_in_browser()

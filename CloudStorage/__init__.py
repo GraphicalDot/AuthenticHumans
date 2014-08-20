@@ -1,3 +1,4 @@
 #-*- coding: utf-8 -*-
 
-from storage_connection import GCS
+from gcs_storage import GCS
+from redis_storage import RDS
