@@ -5,12 +5,13 @@ import redis
 
 class RDS:
 
-	def __init__ (self, redis_list_name=None, db=None):
+	def __init__ (self, db=None):
 		"""
 		This class deals with the storing, creating, deleting, getting object from the proxy_list stored in the
 		redis database.
 		Args:
 			
+			For unhealthy_proxies pass redis_list_name = "unhealthy_proxies" as an argument when initiating this class
 
 		"""
 		if not db:
@@ -18,62 +19,49 @@ class RDS:
 		else:
 			self.redis_connection = redis.StrictRedis(host='localhost', port=6379, db=db)
 
-		if not redis_list_name:
-			self.redis_list_name = "proxies"
-		else:
-			self.redis_list_name = redis_list_name
-
 		
-	def store_proxy_list(self, proxy_list):
+	def store_proxy_list(self, proxy_list, status):
 		"""
 		proxy_list is the list of the proxies which will be stores in the redis proxies list
 		Each element is in the form of 
 		{"ip": ip, "port": 1080, "type": Socks4, "country": Brazil, "latency": 30, "reliability": 90}
 
-		"""
+		status: healthy or unhealhty
+		if status != "healthy":
+			raise StandardError("not a valid status for proxy")
 		
+		if status != "unhealthy":
+			raise StandardError("not a valid status for proxy")
+		"""
 		with self.redis_connection.pipeline() as pipe:
 			try:
 				for proxy in proxy_list:
-					pipe.rpush(self.redis_list_name, proxy)
-			
+					proxy["status"] = status
+					pipe.hmset(proxy.get("ip"), proxy)
 				pipe.execute()
 			except Exception as e:
 				raise StandardError(e)
 
 	def total_proxies(self):
-		number = self.redis_connection.lrange(self.redis_list_name, 0, -1)
-		return number
+		proxy_list = self.redis_connection.keys()
+		return proxy_list
 
 
-	def proxy_range(self, start, stop):
-		proxies = self.redis_connection.lrange(self.redis_list_name, start, stop)
-		return proxies
-
-
-	def proxy_on_index(self, index):
+	def proxy_details(self, proxy):
 		"""
-		Returns proxy on the basis of the index given in the args
+		Return keys and its values for the related proxy
 		"""
-		proxy = self.redis_connection.lindex(self.redis_list_name, index)
-		return proxy
 
-	def del_lkey(self, index):
-		"""
-		This method deletes the left key and return the proxy present on the position 0
-		"""
-		proxy = self.redis_connection.lindex("proxies", 0)
-		self.redis_connection.lpop("proxies")
-		return proxy
+		proxy_details = self.redis_connection.hgetall(proxy)
+		return proxy_details
 
-	def del_rkey(self, index):
-		"""
-		This method deletes the right key and return the proxy present on the position 0
-		"""
-		proxy = self.redis_connection.lindex("proxies", -1)
-		self.redis_connection.lpop("proxies")
-		return proxy
 
+	def delete_proxy(self, proxy):
+		"""
+		Delete proxy
+		"""
+		self.redis_connection.delete(proxy)
+		return 
 
 
 

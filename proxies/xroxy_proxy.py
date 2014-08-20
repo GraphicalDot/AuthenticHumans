@@ -157,6 +157,7 @@ class XRoxyProxies:
 			self.__select_option(driver, "//select[@id='reliability_id']", self.reliability)
 		
 		html = driver.page_source
+		driver.close()
 		proxy_list = self.__xroxy_parse(html) #here we have the whole proxy list
 		self.redis(proxy_list)
 		return True
@@ -185,7 +186,7 @@ class XRoxyProxies:
 		"""
 		redis_instance = RDS()
 		try:
-			redis_instance.store_proxy_list(proxy_list)
+			redis_instance.store_proxy_list(proxy_list, "healthy")
 		except StandardError as e:
 			print e
 
@@ -193,5 +194,5 @@ class XRoxyProxies:
 
 if __name__ == "__main__":
 	#instance = XRoxyProxies(number_of_proxies=100, type_of_proxy="Socks4", country="CN", latency="3000", reliability="9000")
-	instance = XRoxyProxies(number_of_proxies=100)
+	instance = XRoxyProxies(number_of_proxies=10)
 	print instance.xroxy_in_browser()
