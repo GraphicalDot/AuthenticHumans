@@ -118,6 +118,15 @@ class RedisUrlWorkers:
 		return not bool(self.redis_connection.keys())
 
 
+	def node_details(self, node):
+		"""
+		Return keys and its values for the related node
+		"""
+
+		node_details = self.redis_connection.hgetall(node)
+		return node_details
+
+
 	def profiles_url_present(self):
 		"""
 		Returns the number of profiles present in the database
@@ -134,7 +143,7 @@ class RedisUrlWorkers:
 	def store_seed_url(self, key, details):
 		with self.redis_connection.pipeline() as pipe:
 			try:
-					pipe.hmset(key, details)
+				pipe.hmset(key, details)
 				pipe.execute()
 			except Exception as e:
 				raise StandardError(e)
