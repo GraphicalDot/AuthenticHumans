@@ -10,7 +10,7 @@ from selenium.webdriver.support.ui import Select
 
 parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent)
-from CloudStorage import RDS
+from CloudStorage import RedisProxy
 
 class XRoxyProxies:
 	"""
@@ -180,19 +180,23 @@ class XRoxyProxies:
 
 	def redis(self, proxy_list):
 		"""
-		This method will take a proxy_list and then store it in the redis list
+		This method will take a proxy_list and then store it in the redis.
 		In case, Unable to store in redis, A standard error will be raised with the exception messege from the class RDS
 		which will then be handled here
+		
+		All the proxies scraped from xroxy will be put into redis with staus "unhealthy" as we would be not clear
+		whether they are healthy or not, We will have to check them with our ProxyHealthCheck.
+		
 		"""
-		redis_instance = RDS()
+		redis_instance = RedisProxy()
 		try:
-			redis_instance.store_proxy_list(proxy_list, "healthy")
+			redis_instance.store_proxy_list(proxy_list, "unhealthy")
 		except StandardError as e:
 			print e
 
 
 
 if __name__ == "__main__":
-	#instance = XRoxyProxies(number_of_proxies=100, type_of_proxy="Socks4", country="CN", latency="3000", reliability="9000")
-	instance = XRoxyProxies(number_of_proxies=10)
+	instance = XRoxyProxies(number_of_proxies=100, type_of_proxy="Socks4", country="CN")
+	#instance = XRoxyProxies(number_of_proxies=10)
 	print instance.xroxy_in_browser()

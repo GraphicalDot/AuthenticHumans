@@ -3,7 +3,8 @@ from kombu import Exchange, Queue
 from celery.schedules import crontab
 #from kombu import serialization
 #serialization.registry._decoders.pop("application/x-python-serialize")
-BROKER_URL = 'redis://'
+#BROKER_URL = 'redis://'
+BROKER_URL = 'redis://localhost:6379/0'
 
 CELERY_QUEUES = (
 		Queue('scrape_url', Exchange('default', delivery_mode= 2),  routing_key='scrape_url.import'),
