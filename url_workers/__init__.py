@@ -1,4 +1,4 @@
 #!/usr/bin/env python
 
 
-from urlworkers import URLWorkersTask
+from urlworkers import URLWorkersLinkedin

@@ -10,6 +10,7 @@ CELERY_QUEUES = (
 		Queue('scrape_url', Exchange('default', delivery_mode= 2),  routing_key='scrape_url.import'),
 		Queue('gcs_links', Exchange('default', delivery_mode=2),  routing_key='gcs_links.import'),
 		Queue('parse_html', Exchange('default', delivery_mode=2),  routing_key='parse_html.import'),
+		Queue('url_workers', Exchange('default', delivery_mode=2),  routing_key='url_workers.import'),
 		    )
 
 CELERY_ROUTES = {
@@ -36,20 +37,21 @@ CELERY_ROUTES = {
 				'queue': 'parse_html',
 				'routing_key': 'parse_html.import',
 							        },
+		'URLWorkersLinkedin.linkedin': {
+				'queue': 'url_workers',
+				'routing_key': 'url_workers.import',
+							        },
 			}
 
 
-"""
 CELERYBEAT_SCHEDULE = {
 	'every-minute': {
-		'task': 'tasks.populate_scrape_url',
+		'task': 'URLWorkersLinkedin.linkedin',
 			'schedule': crontab(minute='*/1'),
-			'args': ("LINKEDIN"),
 			},
 	}
 
 
-"""
 
 #redis://:password@hostname:port/db_number #if using a remote host
 #BROKER_HOST = ''

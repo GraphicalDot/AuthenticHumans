@@ -6,7 +6,7 @@ from celery.utils import gen_unique_id, cached_property
 from celery.decorators import periodic_task
 from datetime import timedelta
 from celery.utils.log import get_task_logger
-from url_workers import URLWorkersTask
+from url_workers import URLWorkersLinkedin
 from fetching_workers import FetchingWorkersTask
 from parsing_workers import ParsingWorkersTask
 import time
