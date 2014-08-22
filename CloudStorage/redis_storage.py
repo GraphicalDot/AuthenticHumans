@@ -111,6 +111,37 @@ class RedisUrlWorkers:
 			self.redis_connection = redis.StrictRedis(host='localhost', port=6379, db=db)
 
 
+
+	def not_scraped_by_level(self, level=None):
+		"""
+		This returns the number of links which are not scraped on the basis of the level, if provided in the arguments
+		Args:
+			level: type int
+		
+		"""
+		##TODO : improve performance by either implementing lua script or by hscan by hscan is not been implemented by this python-redis
+		if not level:
+			#If the level is nor provided, this method will returns all the links present in the db which are not been scraped
+			#Irrepective of the tree level they belong to
+			urls = list()
+
+			for url in self.redis_connection.keys():
+				if not eval(self.redis_connection.hget(url, "is_scraped")):
+					urls.append(url)
+			
+			return urls
+
+		urls = list()
+		for url in self.redis_connection.keys():
+			#If the level is provided, this method will return all the links present in the database that were not been scraped and 
+			#belongs to a particular level in the tree as specified by the level argument provided in the arguments
+
+			is_scraped, node_level = self.redis_connection.hmget(url, "is_scraped", "level")
+			if not eval(is_scraped) and int(node_level) == level:
+				urls.append(url)
+		return urls
+
+
 	def is_db_empty(self):
 		"""
 		Return True if databse is empty else return False
@@ -135,18 +166,16 @@ class RedisUrlWorkers:
 		profiles = list()
 
 		for url in self.redis_connection.keys():
-			if redis_connection.hget(url, "is_profile"):
+			if eval(redis_connection.hget(url, "is_profile")):
 				profiles.append(url)
 		return profiles
 
 
 	def store_seed_url(self, key, details):
-		with self.redis_connection.pipeline() as pipe:
-			try:
-				pipe.hmset(key, details)
-				pipe.execute()
-			except Exception as e:
-				raise StandardError(e)
+		try:
+			self.redis_connection.hmset(key, details)
+		except Exception as e:
+			raise StandardError(e)
 
 	def store_seed_url_children(self, unscraped_child_url_list):
 		with self.redis_connection.pipeline() as pipe:

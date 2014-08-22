@@ -39,12 +39,21 @@ class URLWorkersLinkedin:
 				seed_url = "http://www.linkedin.com/directory/people-%s"%(alphabet)
 				url_dict = dict()
 				url_dict.update({"network_name": network_name, "name": "seed_nodes", 
-					"is_profile": False, "is_scraped": False, "child_links": False, "level": int(1), "parent_node": None})
+					"is_profile": False, "is_scraped": False, "child_links": False, "level": int(1), 
+					"parent_node": 'http://www.linkedin.com/directory/'})
 				
-				redis_class.store_seed_url(key=seed_url, details=json.dumps(url_dict))
+				print url_dict
+				redis_class.store_seed_url(seed_url, url_dict)
 		
 		
 		#URLWorkersLinkedin.populate_linked("http://www.linkedin.com/directory/people-a", redis_class, network_name)
+		
+		
+		for url in redis_class.not_scraped_by_level(4)[0:10]:
+			print url
+			URLWorkersLinkedin.populate_linked(url, redis_class, network_name)
+		
+		
 		return 
 	
 
@@ -83,21 +92,22 @@ class URLWorkersLinkedin:
 			for element in dir_links_elems:
 				url = element.attrib['href']
 				url_dict = dict()
-				url_dict.update({"network_name": network_name, "name": element.attrib["title"], "parent_node": parent,
-					"is_profile": True, "is_scraped": False, "child_links": False, "level": parent_level+1})
+				url_dict.update({"network_name": network_name, "name": element.attrib["title"], 
+					"parent_node": parent, "url": element.attrib["href"], "is_profile": True, 
+					"is_scraped": False, "child_links": False, "level": parent_level+1})
 				
 				redis_class.store_seed_url(key=url, details=url_dict)
 			return
 
 
 
-		if not 'directory' in parent or '/dir/' in parent: #this means that this is a profile
+		if not 'directory' in parent: #this means that this is a profile
 			#In this case the parent is itself the child so its name is parent name, so dont change the parent and the level
 			url_dict = dict()
-			url_dict.update({"network_name": network_name, "name": parent_name, 
+			url_dict.update({"network_name": network_name, "name": parent_name, "url": parent,
 					"is_profile": True, "is_scraped": False, "child_links": False,})
 			
-			redis_class.store_seed_url(key=seed_url, details=url_dict)
+			redis_class.store_seed_url(key=parent, details=url_dict)
 			#is_scraped parameter will be changed by parsing workers
 			return
 
@@ -112,7 +122,7 @@ class URLWorkersLinkedin:
 		for element in dir_links_elems:
 			url_dict = dict()
 			
-			url = 'http://in.linkedin.com{link_path}'.format(link_path=element.attrib['href'])
+			url = 'http://www.linkedin.com{link_path}'.format(link_path=element.attrib['href'])
 			
 			url_dict.update({"network_name": network_name, "name": element.text.strip(), 
 				"is_profile": False, "is_scraped": False, "child_links": False, "parent_node": parent, "level": parent_level+1})
